@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIE3-4 GPS Tracking System</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+        /* General styling for the body */
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        /* Header styling */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #211a52; /* Updated header color */
+            color: white;
+            padding: 10px 20px;
+        }
+
+        header img {
+            height: 40px;
+            background-color: white; /* White background behind the image */
+            padding: 5px; /* Space between the image and the background */
+            border-radius: 5px; /* Rounded corners */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        }
+
+        header h1 {
+            font-size: 20px;
+            margin: 0;
+        }
+
+        /* Set Home Button Styling */
+        #set-home-btn {
+            background-color: #4CAF50; /* Green */
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin-left: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        #set-home-btn.active {
+            background-color: #45a049;
+        }
+
+        /* Layout for the main content */
+        main {
+            display: flex;
+            flex: 1;
+        }
+
+        /* Updated Map styling */
+        #map {
+            flex: 7; /* Increased flex to occupy more space */
+            height: 100%;
+        }
+
+        /* Updated Sidebar styling */
+        #sidebar {
+            flex: 1; /* Reduced flex to make sidebar half its original size */
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-left: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-y: auto;
+        }
+
+        #sidebar-content {
+            /* Container for the list and downtime settings */
+        }
+
+        #sidebar h2 {
+            font-size: 18px;
+            margin-top: 0;
+            text-align: center;
+        }
+
+        #coordinates {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            font-size: 14px;
+        }
+
+        #coordinates li {
+            margin: 5px 0;
+            padding: 8px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        /* Downtime Alarm Section Styling */
+        #downtime-section {
+            margin-top: 20px;
+        }
+
+        #downtime-section h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .downtime-button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #2196F3; /* Blue */
+            color: white;
+        }
+
+        .downtime-button:hover {
+            background-color: #0b7dda;
+        }
+
+        /* Display Area for Downtime Settings */
+        #downtime-display {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        /* Alarm Status Indicator Styling */
+        #alarm-status {
+            margin-top: 20px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #alarm-status .status-indicator {
+            display: flex;
+            align-items: center;
+        }
+
+        #alarm-status .status-indicator .dot {
+            height: 15px;
+            width: 15px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background-color: grey; /* Default color */
+        }
+
+        #alarm-status.active .dot {
+            background-color: red;
+        }
+
+        #alarm-status.inactive .dot {
+            background-color: green;
+        }
+
+        /* Credits styling */
+        #credits {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 800px) {
+            #map {
+                flex: 6;
+            }
+
+            #sidebar {
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 500px) {
+            main {
+                flex-direction: column;
+            }
+
+            #map, #sidebar {
+                flex: none;
+                height: 50%;
+            }
+
+            #sidebar {
+                border-left: none;
+                border-top: 1px solid #ccc;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div style="display: flex; align-items: center;">
+            <h1>AIE3-4 GPS Tracking System</h1>
+            <button id="set-home-btn">Set Home</button>
+        </div>
+        <img src="images/AAU_logo_2012.png" alt="Aalborg University Logo">
+    </header>
+
+    <!-- Main content -->
+    <main>
+        <!-- Map -->
+        <div id="map"></div>
+
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div id="sidebar-content">
+                <h2>GPS Coordinates</h2>
+                <ul id="coordinates"></ul>
+
+                <!-- Downtime Alarm Section -->
+                <div id="downtime-section">
+                    <h3>Set Downtime Alarm</h3>
+                    <button id="set-downtime-btn" class="downtime-button">Set Downtime Duration</button>
+                    <button id="set-radius-btn" class="downtime-button">Set Maximum Radius</button>
+
+                    <!-- Display Area for Downtime Settings -->
+                    <div id="downtime-display">
+                        <strong>Downtime Interval:</strong>
+                        <p id="downtime-interval">Not Set</p>
+                        <strong>Maximum Radius:</strong>
+                        <p id="max-radius-display">Not Set</p>
+                    </div>
+                </div>
+
+                <!-- Alarm Status Indicator -->
+                <div id="alarm-status" class="inactive">
+                    <div class="status-indicator">
+                        <div class="dot"></div>
+                        <span>Alarm Status</span>
+                    </div>
+                    <span id="alarm-status-text">Inactive</span>
+                </div>
+            </div>
+            <div id="credits">
+                AAU ESBJERG, AIE-3-4, Zavulan Alex, Ceban Konstantin. Supervisor: Daniel Ortiz Arroyo
+            </div>
+        </div>
+    </main>
+
+    <!-- Alarm Sound -->
+    <audio id="alarm-audio" src="sounds/alarm.wav" preload="auto"></audio>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <!-- External JavaScript File -->
+    <script src="script.js"></script>
+</body>
+</html>
